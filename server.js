@@ -1,21 +1,14 @@
 const express = require('express');
+const bodyParser = require('body-parser');
 const app = express();
 const PORT = process.env.PORT || 3000;
+const todos = [];
+let todoNextId = 1;
 
-const todos = [{
-	id: 1,
-	description: 'Desc 1',
-	completed: false
-},{
-	id: 2,
-	description: 'Desc 2',
-	completed: false
-},{
-	id: 3,
-	description: 'Desc 3',
-	completed: true
-}];
+// Add middleware
+app.use(bodyParser.json());
 
+// Setup the root route
 app.get('/', function (req, res) {
 	res.send('Todo API root');
 });
@@ -33,6 +26,19 @@ app.get('/todos/:id', function (req, res) {
 	} else {
 		res.status(404).send();
 	}
+});
+
+// POST /todos
+app.post('/todos', function (req, res) {
+	const body = req.body;
+
+	// Add id field and then increment the next id value
+	body.id = todoNextId++;
+
+	// Add the new todo item to our todo array
+	todos.push(body);
+
+	res.json(body);
 });
 
 // Start the Express web server
