@@ -3,7 +3,7 @@ const express = require('express');
 const _ = require('underscore');
 const app = express();
 const PORT = process.env.PORT || 3000;
-const todos = [];
+let todos = [];
 let todoNextId = 1;
 
 // Add middleware
@@ -25,7 +25,18 @@ app.get('/todos/:id', function (req, res) {
 	if (item) {
 		res.json(item);
 	} else {
-		res.status(404).send();
+		res.status(404).json({'error': 'no todo with that id'});
+	}
+});
+
+// DELETE /todos/:id
+app.delete('/todos/:id', function (req, res) {
+	const item = _.findWhere(todos, {id: parseInt(req.params.id, 10)});
+	if (item) {
+		todos = _.without(todos, item);
+		res.json(item);
+	} else {
+		res.status(404).json({'error': 'no todo with that id'});
 	}
 });
 
