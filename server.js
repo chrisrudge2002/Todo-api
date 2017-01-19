@@ -22,22 +22,24 @@ app.get('/todos', function (req, res) {
 // GET /todos/:id
 app.get('/todos/:id', function (req, res) {
 	const item = _.findWhere(todos, {id: parseInt(req.params.id, 10)});
-	if (item) {
-		res.json(item);
-	} else {
-		res.status(404).json({'error': 'no todo with that id'});
+
+	if (!item) {
+		return res.status(404).json({'error': 'no todo with that id'});
 	}
+	
+	res.json(item);
 });
 
 // DELETE /todos/:id
 app.delete('/todos/:id', function (req, res) {
 	const item = _.findWhere(todos, {id: parseInt(req.params.id, 10)});
-	if (item) {
-		todos = _.without(todos, item);
-		res.json(item);
-	} else {
-		res.status(404).json({'error': 'no todo with that id'});
+
+	if (!item) {
+		return res.status(404).json({'error': 'no todo with that id'});
 	}
+
+	todos = _.without(todos, item);
+	res.json(item);
 });
 
 // POST /todos
@@ -57,6 +59,32 @@ app.post('/todos', function (req, res) {
 	todos.push(body);
 
 	res.json(body);
+});
+
+// PUT /todos/:id
+app.put('/todos/:id', function (req, res) {
+	const item = _.findWhere(todos, {id: parseInt(req.params.id, 10)});
+	const body = _.pick(req.body, 'description', 'completed');
+	let validAttributes = {};
+
+	if (!item) {
+		return res.status(404).json({'error': 'no todo with that id'});
+	}
+
+	if (body.hasOwnProperty('description') && _.isString(body.description) && body.description.trim().length > 0) {
+		validAttributes.description = body.description;
+	} else if (body.hasOwnProperty('description')) {
+		return res.status(400).send();
+	}
+
+	if (body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
+		validAttributes.completed = body.completed;
+	} else if (body.hasOwnProperty('completed')) {
+		return res.status(400).send();
+	}
+
+	_.extend(item, validAttributes);
+	res.json(item);
 });
 
 // Start the Express web server
