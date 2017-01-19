@@ -16,30 +16,39 @@ app.get('/', function (req, res) {
 
 // GET /todos
 app.get('/todos', function (req, res) {
-	res.json(todos);
+	const queryParams = req.query;
+	let filteredTodos = todos;
+
+	if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'true') {
+		filteredTodos = _.where(filteredTodos, {completed: true});
+	} else if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'false') {
+		filteredTodos = _.where(filteredTodos, {completed: false});
+	}
+
+	res.json(filteredTodos);
 });
 
 // GET /todos/:id
 app.get('/todos/:id', function (req, res) {
-	const item = _.findWhere(todos, {id: parseInt(req.params.id, 10)});
+	const matchedItem = _.findWhere(todos, {id: parseInt(req.params.id, 10)});
 
-	if (!item) {
+	if (!matchedItem) {
 		return res.status(404).json({'error': 'no todo with that id'});
 	}
 	
-	res.json(item);
+	res.json(matchedItem);
 });
 
 // DELETE /todos/:id
 app.delete('/todos/:id', function (req, res) {
-	const item = _.findWhere(todos, {id: parseInt(req.params.id, 10)});
+	const matchedItem = _.findWhere(todos, {id: parseInt(req.params.id, 10)});
 
-	if (!item) {
+	if (!matchedItem) {
 		return res.status(404).json({'error': 'no todo with that id'});
 	}
 
-	todos = _.without(todos, item);
-	res.json(item);
+	todos = _.without(todos, matchedItem);
+	res.json(matchedItem);
 });
 
 // POST /todos
@@ -63,11 +72,11 @@ app.post('/todos', function (req, res) {
 
 // PUT /todos/:id
 app.put('/todos/:id', function (req, res) {
-	const item = _.findWhere(todos, {id: parseInt(req.params.id, 10)});
+	const matchedItem = _.findWhere(todos, {id: parseInt(req.params.id, 10)});
 	const body = _.pick(req.body, 'description', 'completed');
 	let validAttributes = {};
 
-	if (!item) {
+	if (!matchedItem) {
 		return res.status(404).json({'error': 'no todo with that id'});
 	}
 
@@ -83,8 +92,8 @@ app.put('/todos/:id', function (req, res) {
 		return res.status(400).send();
 	}
 
-	_.extend(item, validAttributes);
-	res.json(item);
+	_.extend(matchedItem, validAttributes);
+	res.json(matchedItem);
 });
 
 // Start the Express web server
