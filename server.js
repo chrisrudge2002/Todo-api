@@ -18,55 +18,55 @@ app.get('/', function(req, res) {
 
 // GET /todos
 app.get('/todos', function(req, res) {
-	const queryParams = req.query;
-	let filteredTodos = todos;
+	const query = req.query;
+	let where = {};
 
-	if (queryParams.hasOwnProperty('q') && queryParams.q.trim().length > 0) {
-		filteredTodos = _.filter(filteredTodos, cur => cur.description.toLowerCase().indexOf(queryParams.q.toLowerCase()) > -1);
+	if (query.hasOwnProperty('q') && query.q.trim().length > 0) {
+		where.description = {
+			like: `%${query.q}%`
+		}
 	}
 
-	if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'true') {
-		filteredTodos = _.where(filteredTodos, {
-			completed: true
-		});
-	} else if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'false') {
-		filteredTodos = _.where(filteredTodos, {
-			completed: false
-		});
+	if (query.hasOwnProperty('completed') && query.completed === 'true') {
+		where.completed = true;
+	} else if (query.hasOwnProperty('completed') && query.completed === 'false') {
+		where.completed = false;
 	}
 
-	res.json(filteredTodos);
+	db.todo.findAll({
+		where: where
+	}).then(function(todos) {
+		res.json(todos);
+	}, function() {
+		res.status(500).send();
+	});
 });
 
 // GET /todos/:id
 app.get('/todos/:id', function(req, res) {
-	const matchedItem = _.findWhere(todos, {
-		id: parseInt(req.params.id, 10)
+	db.todo.findById(parseInt(req.params.id, 10)).then(function(todo) {
+		if (!!todo) {
+			res.json(todo.toJSON());
+		} else {
+			res.status(404).send();
+		}
+	}, function(e) {
+		res.status(500).send();
 	});
-
-	if (!matchedItem) {
-		return res.status(404).json({
-			'error': 'no todo with that id'
-		});
-	}
-
-	res.json(matchedItem);
 });
 
 // DELETE /todos/:id
 app.delete('/todos/:id', function(req, res) {
-	const matchedItem = _.findWhere(todos, {
-		id: parseInt(req.params.id, 10)
+	db.todo.findById(parseInt(req.params.id, 10)).then(function(todo) {
+		if (!!todo) {
+			todo.destroy(todo);
+			res.json(todo.toJSON());
+		} else {
+			res.status(404).send();
+		}
+	}, function(e) {
+		res.status(500).send();
 	});
-
-	if (!matchedItem) {
-		return res.status(404).json({
-			'error': 'no todo with that id'
-		});
-	}
-
-	todos = _.without(todos, matchedItem);
-	res.json(matchedItem);
 });
 
 // POST /todos
@@ -75,7 +75,7 @@ app.post('/todos', function(req, res) {
 
 	db.todo.create(body).then(function(todo) {
 		res.json(todo.toJSON());
-	}).catch(function(e) {
+	}, function(e) {
 		return res.status(400).json(e);
 	});
 });
