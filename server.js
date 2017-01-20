@@ -60,7 +60,7 @@ app.delete('/todos/:id', function(req, res) {
 	db.todo.findById(parseInt(req.params.id, 10)).then(function(todo) {
 		if (!!todo) {
 			todo.destroy(todo);
-			res.json(todo.toJSON());
+			res.status(204).send();
 		} else {
 			res.status(404).send();
 		}
@@ -82,32 +82,32 @@ app.post('/todos', function(req, res) {
 
 // PUT /todos/:id
 app.put('/todos/:id', function(req, res) {
-	const matchedItem = _.findWhere(todos, {
-		id: parseInt(req.params.id, 10)
-	});
 	const body = _.pick(req.body, 'description', 'completed');
 	let validAttributes = {};
 
-	if (!matchedItem) {
-		return res.status(404).json({
-			'error': 'no todo with that id'
-		});
-	}
+	db.todo.findById(parseInt(req.params.id, 10)).then(function(todo) {
+		if (!!todo) {
+			if (body.hasOwnProperty('description') && _.isString(body.description) && body.description.trim().length > 0) {
+				validAttributes.description = body.description;
+			} else if (body.hasOwnProperty('description')) {
+				return res.status(400).send();
+			}
 
-	if (body.hasOwnProperty('description') && _.isString(body.description) && body.description.trim().length > 0) {
-		validAttributes.description = body.description;
-	} else if (body.hasOwnProperty('description')) {
-		return res.status(400).send();
-	}
+			if (body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
+				validAttributes.completed = body.completed;
+			} else if (body.hasOwnProperty('completed')) {
+				return res.status(400).send();
+			}
+			_.extend(todo, validAttributes);
 
-	if (body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
-		validAttributes.completed = body.completed;
-	} else if (body.hasOwnProperty('completed')) {
-		return res.status(400).send();
-	}
-
-	_.extend(matchedItem, validAttributes);
-	res.json(matchedItem);
+			todo.save();
+			res.json(todo.toJSON());
+		} else {
+			res.status(404).send();
+		}
+	}, function(e) {
+		res.status(500).send();
+	});
 });
 
 // Start the Express web server
