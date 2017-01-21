@@ -80,6 +80,17 @@ app.post('/todos', function(req, res) {
 	});
 });
 
+// POST /users
+app.post('/users', function(req, res) {
+	const body = _.pick(req.body, 'email', 'password');
+
+	db.user.create(body).then(function(user) {
+		res.json(user.toJSON());
+	}, function(e) {
+		return res.status(400).json(e);
+	});
+});
+
 // PUT /todos/:id
 app.put('/todos/:id', function(req, res) {
 	const body = _.pick(req.body, 'description', 'completed');
