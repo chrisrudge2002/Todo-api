@@ -83,25 +83,23 @@ app.post('/todos', function(req, res) {
 // PUT /todos/:id
 app.put('/todos/:id', function(req, res) {
 	const body = _.pick(req.body, 'description', 'completed');
-	let validAttributes = {};
+	let attributes = {};
+
+	if (body.hasOwnProperty('description')) {
+		attributes.description = body.description;
+	}
+
+	if (body.hasOwnProperty('completed')) {
+		attributes.completed = body.completed;
+	}
 
 	db.todo.findById(parseInt(req.params.id, 10)).then(function(todo) {
-		if (!!todo) {
-			if (body.hasOwnProperty('description') && _.isString(body.description) && body.description.trim().length > 0) {
-				validAttributes.description = body.description;
-			} else if (body.hasOwnProperty('description')) {
-				return res.status(400).send();
-			}
-
-			if (body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
-				validAttributes.completed = body.completed;
-			} else if (body.hasOwnProperty('completed')) {
-				return res.status(400).send();
-			}
-			_.extend(todo, validAttributes);
-
-			todo.save();
-			res.json(todo.toJSON());
+		if (todo) {
+			todo.update(attributes).then(function(todo) {
+				res.json(todo.toJSON());
+			}, function(e) {
+				res.status(400).json(e);
+			});
 		} else {
 			res.status(404).send();
 		}
