@@ -1,7 +1,9 @@
 "use strict";
 
-const bcrypt = require('bcryptjs');
 const _ = require('underscore');
+const bcrypt = require('bcryptjs');
+const cryptojs = require('crypto-js');
+const jwt = require('jsonwebtoken');
 
 module.exports = function(sequelize, DataTypes) {
 	const user = sequelize.define('user', {
@@ -68,6 +70,24 @@ module.exports = function(sequelize, DataTypes) {
 		instanceMethods: {
 			toPublicJSON: function() {
 				return _.pick(this.toJSON(), 'id', 'email', 'createdAt', 'updatedAt');
+			},
+			generateToken: function(type) {
+				if (!_.isString(type)) {
+					return undefined;
+				}
+
+				try {
+					const stringData = JSON.stringify({
+						id: this.get('id'),
+						type: type
+					});
+					const encryptedData = cryptojs.AES.encrypt(stringData, 'abc123!@#!').toString();
+					return jwt.sign({
+						token: encryptedData
+					}, 'qwerty098');
+				} catch (e) {
+					return undefined;
+				}
 			}
 		}
 	});

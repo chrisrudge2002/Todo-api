@@ -1,9 +1,9 @@
 "use strict";
 
-const bodyParser = require('body-parser');
-const express = require('express');
 const _ = require('underscore');
+const bodyParser = require('body-parser');
 const db = require('./db.js');
+const express = require('express');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -98,7 +98,13 @@ app.post('/users/login', function(req, res) {
 	const body = _.pick(req.body, 'email', 'password');
 
 	db.user.authenticate(body).then(function(user) {
-		res.json(user.toPublicJSON());
+		const token = user.generateToken('authentication');
+
+		if (token) {
+			res.header('Auth', token).json(user.toPublicJSON());
+		} else {
+			res.status(401).send();
+		}
 	}, function(e) {
 		res.status(401).send();
 	});
@@ -133,7 +139,9 @@ app.put('/todos/:id', function(req, res) {
 });
 
 // Start the Express web server
-db.sequelize.sync({force: true}).then(function() {
+db.sequelize.sync({
+	force: true
+}).then(function() {
 	app.listen(PORT, function() {
 		console.log(`Express listening on port ${PORT}!`);
 	});
