@@ -1,6 +1,5 @@
 "use strict";
 
-const bcrypt = require('bcryptjs');
 const bodyParser = require('body-parser');
 const express = require('express');
 const _ = require('underscore');
@@ -98,22 +97,10 @@ app.post('/users', function(req, res) {
 app.post('/users/login', function(req, res) {
 	const body = _.pick(req.body, 'email', 'password');
 
-	if (typeof body.email !== 'string' || typeof body.password !== 'string') {
-		res.status(400).send();
-	}
-
-	db.user.findOne({
-		where: {
-			email: body.email
-		}
-	}).then(function(user) {
-		if (!user || !bcrypt.compareSync(body.password, user.get('password_hash'))) {
-			return res.status(401).send();
-		} 
-
-		res.json(body);
+	db.user.authenticate(body).then(function(user) {
+		res.json(user.toPublicJSON());
 	}, function(e) {
-		res.status(500).send();
+		res.status(401).send();
 	});
 });
 
