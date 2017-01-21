@@ -83,6 +83,15 @@ app.delete('/todos/:id', middleware.requireAuthentication, function(req, res) {
 	})
 });
 
+// DELETE /users/login
+app.delete('/users/login', middleware.requireAuthentication, function(req, res) {
+	req.token.destroy().then(function () {
+		res.status(204).send();
+	}, function() {
+		res.status(500).send();
+	});
+});
+
 // POST /todos
 app.post('/todos', middleware.requireAuthentication, function(req, res) {
 	const body = _.pick(req.body, 'description', 'completed');
@@ -112,16 +121,18 @@ app.post('/users', function(req, res) {
 // POST /users/login
 app.post('/users/login', function(req, res) {
 	const body = _.pick(req.body, 'email', 'password');
+	let userInstance;
 
 	db.user.authenticate(body).then(function(user) {
 		const token = user.generateToken('authentication');
+		userInstance = user;
 
-		if (token) {
-			res.header('Auth', token).json(user.toPublicJSON());
-		} else {
-			res.status(401).send();
-		}
-	}, function(e) {
+		return db.token.create({
+			token: token
+		});
+	}).then(function(tokenInstance) {
+		res.header('Auth', tokenInstance.get('token')).json(userInstance.toPublicJSON());
+	}).catch(function(e) {
 		res.status(401).send();
 	});
 });
@@ -160,7 +171,9 @@ app.put('/todos/:id', middleware.requireAuthentication, function(req, res) {
 });
 
 // Start the Express web server
-db.sequelize.sync({force: true}).then(function() {
+db.sequelize.sync({
+	force: true
+}).then(function() {
 	app.listen(PORT, function() {
 		console.log(`Express listening on port ${PORT}!`);
 	});
